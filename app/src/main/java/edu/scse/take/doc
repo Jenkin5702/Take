@@ -1,0 +1,83 @@
+
+mapStatus	地图状态
+compassEnable	是否开启指南针，默认开启
+mapType	地图模式，默认为普通地图
+rotateGesturesEnabled	是否允许地图旋转手势，默认允许
+scrollGesturesEnabled	是否允许拖拽手势，默认允许
+overlookingGesturesEnabled	是否允许俯视图手势，默认允许
+zoomControlsEnabled	是否显示缩放按钮控件，默认允许
+zoomControlsPosition	设置缩放控件位置
+zoomGesturesEnabled	是否允许缩放手势，默认允许
+scaleControlEnabled	是否显示比例尺控件，默认显示
+scaleControlPosition	设置比例尺控件位置
+logoPosition	设置Logo位置
+
+
+MAP_TYPE_NORMAL	普通地图（包含3D地图）
+MAP_TYPE_SATELLITE	卫星图
+MAP_TYPE_NONE	空白地图
+
+
+//        mUiSettings = mBaiduMap.getUiSettings();
+//        mUiSettings.setCompassEnabled(false);
+//        mMapView.showScaleControl(false);
+//
+//        mMapView.showZoomControls(false);
+//        mUiSettings.setScrollGesturesEnabled(false);
+//        mUiSettings.setZoomGesturesEnabled(false);
+//        mUiSettings.setRotateGesturesEnabled(false);
+
+定位模式 地图SDK支持三种定位模式：NORMAL（普通态）, FOLLOWING（跟随态）, COMPASS（罗盘态）
+mCurrentMode = LocationMode.FOLLOWING;//定位跟随态
+mCurrentMode = LocationMode.NORMAL;   //默认为 LocationMode.NORMAL 普通态
+mCurrentMode = LocationMode.COMPASS;  //定位罗盘态
+自定义定位图标 支持自定义定位图标样式，替换定位icon
+
+mCurrentMarker = BitmapDescriptorFactory.fromResource(R.drawable.icon_geo);
+自定义精度圈填充颜色
+
+//自定义精度圈填充颜色
+accuracyCircleFillColor = 0xAAFFFF88;
+自定义精度圈边框颜色
+
+//自定义精度圈边框颜色
+accuracyCircleStrokeColor = 0xAA00FF00;
+
+
+
+Marker点击事件接口:
+
+BaiduMap.OnMarkerClickListener listener = new BaiduMap.OnMarkerClickListener() {
+    /**
+     * 地图 Marker 覆盖物点击事件监听函数
+     * @param marker 被点击的 marker
+     */
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        return false;//是否捕获点击事件
+    }
+};
+
+// 设置地图 Marker 覆盖物点击事件监听者,自3.4.0版本起可设置多个监听对象，停止监听时调用removeMarkerClickListener移除监听对象
+mBaiduMap.setOnMarkerClickListener(listener);
+//停止监听时移除监听对象
+mBaiduMap.removeMarkerClickListener(listener);
+
+
+icon	设置图标
+animateType	动画类型	MarkerAnimateType.none
+MarkerAnimateType.drop
+MarkerAnimateType.grow
+MarkerAnimateType.jump
+alpha	透明度
+position	位置坐标
+perspective	是否开启近大远小效果	true
+false
+draggable	是否可拖拽
+flat	是否平贴地图 (俯视图)（双手下拉地图查看效果）	true
+false
+anchor	锚点比例
+rotate	旋转角度
+title	设置标题
+visible	是否可见
+extraInfo	额外信息
