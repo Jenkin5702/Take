@@ -31,15 +31,15 @@
             app:menu="@menu/navigation" />
 
 
-        <FrameLayout
-            android:id="@+id/fl_container"
+        <com.baidu.mapapi.map.MapView
+            android:id="@+id/baidu_map"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintBottom_toTopOf="@+id/bottomNavigationView"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/toolbar">
-        </FrameLayout>
+        </com.baidu.mapapi.map.MapView>
 
     </android.support.constraint.ConstraintLayout>
     <android.support.design.widget.NavigationView

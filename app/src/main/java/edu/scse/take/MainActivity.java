@@ -1,7 +1,12 @@
 package edu.scse.take;
 
+import android.animation.Animator;
+import android.animation.ValueAnimator;
 import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -10,11 +15,14 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.OvershootInterpolator;
+import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
@@ -31,24 +39,89 @@ import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+
 public class MainActivity extends AppCompatActivity implements
         BottomNavigationView.OnNavigationItemSelectedListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
 
     private BroadcastReceiver mReceiver;
     private Toolbar toolbar;
     private FragmentManager fragmentManager;
-    private MapView mMapView;
-    private BaiduMap mBaiduMap;
-    private MyMapFragment myMapFragment=MyMapFragment.newInstance();
+    private MapView mapView;
+    private BaiduMap baiduMap;
+    private Context context;
+    private LocationClient mLocationClient;
+
+    private float mapX;
+    private float mapY;
+    private boolean hided=false;
+
+    public class MyLocationListener extends BDAbstractLocationListener {
+        @Override
+        public void onReceiveLocation(BDLocation location) {
+            //mapView 销毁后不在处理新接收的位置
+            if (location != null && mapView != null) {
+                MyLocationData locData = new MyLocationData.Builder()
+                        .accuracy(location.getRadius())
+                        .direction(location.getDirection())
+                        .latitude(location.getLatitude())// 此处设置开发者获取到的方向信息，顺时针0-360
+                        .longitude(location.getLongitude())
+                        .build();
+                baiduMap.setMyLocationData(locData);
+            }
+        }
+    }
+
+
     @Override
     public void onClick(View v) {
 
     }
 
+    private void setMapCustomFile(Context context, String fileName) {
+        InputStream inputStream = null;
+        FileOutputStream fileOutputStream = null;
+        String moduleName = null;
+        try {
+            Toast.makeText(context,"加载资源",Toast.LENGTH_SHORT).show();
+            inputStream = context.getAssets().open("custom_config/" + fileName);
+            byte[] b = new byte[inputStream.available()];
+            inputStream.read(b);
+            moduleName = context.getFilesDir().getAbsolutePath();
+            File file = new File(moduleName + "/" + fileName);
+            if (file.exists()) file.delete();
+            file.createNewFile();
+            fileOutputStream = new FileOutputStream(file);
+            //将自定义样式文件写入本地
+            fileOutputStream.write(b);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(context,"未能加载资源",Toast.LENGTH_SHORT).show();
+        } finally {
+            try {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+                if (fileOutputStream != null) {
+                    fileOutputStream.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+//设置自定义样式文件
+        MapView.setCustomMapStylePath(moduleName + "/" + fileName);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        context=MainActivity.this;
+        setMapCustomFile(context,"yanmou.json");
         setContentView(R.layout.activity_main);
 
         toolbar = findViewById(R.id.toolbar);
@@ -71,6 +144,36 @@ public class MainActivity extends AppCompatActivity implements
         mReceiver = new SDKReceiver();
         registerReceiver(mReceiver, iFilter);
 
+        loadMap();
+
+    }
+
+    private void loadMap(){
+        mapView=findViewById(R.id.baidu_map);
+        baiduMap=mapView.getMap();
+
+        mapX=mapView.getX();
+//        mapY=mapView.getY()+toolbar.getHeight();
+        mapY=150;
+
+        BaiduMapOptions options;
+
+        options = new BaiduMapOptions();
+        options.mapType(BaiduMap.MAP_TYPE_NORMAL);
+
+        mLocationClient = new LocationClient(context);
+        LocationClientOption option = new LocationClientOption();
+        option.setOpenGps(true); // 打开gps
+        option.setCoorType("bd09ll"); // 设置坐标类型
+        option.setScanSpan(1000);
+        mLocationClient.setLocOption(option);
+        mLocationClient.registerLocationListener(new MyLocationListener());
+        mLocationClient.start(); //开启地图定位图层
+
+        baiduMap.setMyLocationEnabled(true); //开启地图定位图层
+        baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(17));
+        baiduMap.setMyLocationConfiguration(new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL, false, BitmapDescriptorFactory.fromResource(R.mipmap.icon_gcoding)));
+        baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(new LatLng(39.24249, 117.064865))); //设置起始位置
     }
 
     @Override
@@ -82,104 +185,83 @@ public class MainActivity extends AppCompatActivity implements
             super.onBackPressed();
         }
     }
-
     @Override
     protected void onDestroy() {
         unregisterReceiver(mReceiver);
         super.onDestroy();
     }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
-
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        int id = item.getItemId();
-//        if (id == R.id.action_search) {
-//            final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-//            builder.setView(R.layout.dialog_search);
-//            builder.setTitle("查找地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
-//                @Override
-//                public void onClick(DialogInterface dialog, int which) {
-//                    LatLng llText = new LatLng(39.246, 117.063);
-//                    //设置起始位置
-//                    mBaiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(llText));
-//                    mBaiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(20));
-//                    mBaiduMap.clear();
-//                    new MarkPoint(llText.latitude,llText.longitude,"快递").mark();
-////                    final TextOptions mTextOptions = new TextOptions() // .bgColor(0x77000000)
-////                            .fontSize(66) //字号
-////                            .fontColor(0xFF000000) //文字颜色
-////                            .position(llText);
-////                    ValueAnimator animator = ValueAnimator.ofInt(0, 32);
-////                    //构建TextOptions对象
-////                    animator.setDuration(1000);
-////                    animator.setInterpolator(new DecelerateInterpolator());
-////                    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-////                        @Override
-////                        public void onAnimationUpdate(ValueAnimator animation) {
-////                            int value = (int) animation.getAnimatedValue();
-////                            Overlay mText = mBaiduMap.addOverlay(mTextOptions.text("" + value));
-////                            //文字内容
-////                        }
-////                    });
-////                    animator.start();
-//                }
-//            }).show();
-//        } else if (id == R.id.action_exit) {
-//            SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
-//            SharedPreferences.Editor editor = sp.edit();
-//            editor.putBoolean("login", false);
-//            editor.apply();
-//            finish();
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
-
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_search) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setView(R.layout.dialog_search);
+            builder.setTitle("查找地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    LatLng llText = new LatLng(39.246, 117.063);
+                    //设置起始位置
+                    baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(llText));
+                    baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(20));
+                    baiduMap.clear();
+                }
+            }).show();
+        } else if (id == R.id.action_exit) {
+            SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
+            SharedPreferences.Editor editor = sp.edit();
+            editor.putBoolean("login", false);
+            editor.apply();
+            finish();
+        }else if (id==R.id.hide){
+            if (hided){
+                item.setIcon(R.drawable.ic_map_black_24dp);
+                ValueAnimator animator=ValueAnimator.ofFloat(2000f,mapY);
+                animator.setInterpolator(new OvershootInterpolator());
+                animator.setDuration(500);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        mapView.setY((Float) animation.getAnimatedValue());
+                    }
+                });
+                animator.start();
+                hided=false;
+            }else {
+                item.setIcon(R.drawable.ic_map_black_24dp_opac);
+                hided=true;
+                ValueAnimator animator=ValueAnimator.ofFloat(mapY,2000f);
+                animator.setInterpolator(new OvershootInterpolator());
+                animator.setDuration(500);
+                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animation) {
+                        mapView.setY((Float) animation.getAnimatedValue());
+                    }
+                });
+                animator.start();
+            }
+        }
+        return super.onOptionsItemSelected(item);
+    }
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
         switch (menuItem.getItemId()) {
             case R.id.navigation_home:
                 toolbar.setTitle("地图");
-                fragmentManager.beginTransaction().replace(R.id.fl_container, new FragmentMap()).commit();
-//                mMapView=myMapFragment.getMapView();
-//                mBaiduMap=mMapView.getMap();
-//
-//                LocationClient mLocationClient;
-//                BaiduMapOptions options;
-//
-//                options = new BaiduMapOptions();
-//                options.mapType(BaiduMap.MAP_TYPE_NORMAL);
-//
-//                mLocationClient = new LocationClient(MainActivity.this);
-//                LocationClientOption option = new LocationClientOption();
-//                option.setOpenGps(true); // 打开gps
-//                option.setCoorType("bd09ll"); // 设置坐标类型
-//                option.setScanSpan(1000);
-//                mLocationClient.setLocOption(option);
-//                mLocationClient.registerLocationListener(new MyLocationListener());
-//                mLocationClient.start(); //开启地图定位图层
-//
-//
-//                mBaiduMap.setMyLocationEnabled(true); //开启地图定位图层
-//                mBaiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(17));
-//                mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL, false, BitmapDescriptorFactory.fromResource(R.mipmap.icon_gcoding)));
-//                mBaiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(new LatLng(39.24249, 117.064865))); //设置起始位置
                 return true;
             case R.id.navigation_dashboard:
                 toolbar.setTitle("分类");
-//                fragmentManager.beginTransaction().remove(myMapFragment).commit();
                 return true;
             case R.id.navigation_notifications:
                 toolbar.setTitle("动态");
-                fragmentManager.beginTransaction().replace(R.id.fl_container, new FragmentCommunication()).commit();
                 return true;
             case R.id.navigation_shop:
                 toolbar.setTitle("商城");
-//                fragmentManager.beginTransaction().remove(myMapFragment).commit();
                 return true;
         }
         return false;
