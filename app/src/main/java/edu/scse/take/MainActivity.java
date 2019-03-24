@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -18,10 +19,12 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
@@ -55,6 +58,8 @@ public class MainActivity extends AppCompatActivity implements
     private BaiduMap baiduMap;
     private Context context;
     private LocationClient mLocationClient;
+    private ValueAnimator animatorDrop;
+    private ValueAnimator animatorArise;
 
     private float mapX;
     private float mapY;
@@ -134,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements
 
         fragmentManager = getSupportFragmentManager();
 
+
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
         bottomNavigationView.setOnNavigationItemSelectedListener(this);
         bottomNavigationView.setSelectedItemId(R.id.navigation_home);
@@ -144,17 +150,44 @@ public class MainActivity extends AppCompatActivity implements
         mReceiver = new SDKReceiver();
         registerReceiver(mReceiver, iFilter);
 
+        initAnimator();
         loadMap();
 
+    }
+
+    private void initAnimator(){
+        animatorArise=ValueAnimator.ofFloat(2000f,mapY);
+        animatorArise.setInterpolator(new OvershootInterpolator());
+        animatorArise.setDuration(500);
+        animatorArise.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                mapView.setY((Float) animation.getAnimatedValue());
+            }
+        });
+
+        animatorDrop=ValueAnimator.ofFloat(mapY,2000f);
+        animatorDrop.setInterpolator(new OvershootInterpolator());
+        animatorDrop.setDuration(500);
+        animatorDrop.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                mapView.setY((Float) animation.getAnimatedValue());
+            }
+        });
     }
 
     private void loadMap(){
         mapView=findViewById(R.id.baidu_map);
         baiduMap=mapView.getMap();
 
+        Log.i("mapview","mapX:"+mapX);
+        Log.i("mapview","mapY:"+mapY);
+        Log.i("mapview","mapHeight:"+mapView.getHeight());
+        Log.i("mapview","mapWidth:"+mapView.getWidth());
         mapX=mapView.getX();
 //        mapY=mapView.getY()+toolbar.getHeight();
-        mapY=150;
+        mapY=mapView.getY();
 
         BaiduMapOptions options;
 
@@ -199,6 +232,9 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_search) {
+            if(hided){
+                showMap();
+            }
             final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setView(R.layout.dialog_search);
             builder.setTitle("查找地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
@@ -220,42 +256,34 @@ public class MainActivity extends AppCompatActivity implements
         }else if (id==R.id.hide){
             if (hided){
                 item.setIcon(R.drawable.ic_map_black_24dp);
-                ValueAnimator animator=ValueAnimator.ofFloat(2000f,mapY);
-                animator.setInterpolator(new OvershootInterpolator());
-                animator.setDuration(500);
-                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                    @Override
-                    public void onAnimationUpdate(ValueAnimator animation) {
-                        mapView.setY((Float) animation.getAnimatedValue());
-                    }
-                });
-                animator.start();
-                hided=false;
+                showMap();
             }else {
                 item.setIcon(R.drawable.ic_map_black_24dp_opac);
-                hided=true;
-                ValueAnimator animator=ValueAnimator.ofFloat(mapY,2000f);
-                animator.setInterpolator(new OvershootInterpolator());
-                animator.setDuration(500);
-                animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                    @Override
-                    public void onAnimationUpdate(ValueAnimator animation) {
-                        mapView.setY((Float) animation.getAnimatedValue());
-                    }
-                });
-                animator.start();
+                hideMap();
             }
         }
         return super.onOptionsItemSelected(item);
     }
+
+    private void showMap() {
+        animatorArise.start();
+        hided=false;
+    }
+    private void hideMap(){
+        animatorDrop.start();
+        hided=true;
+    }
+
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
         switch (menuItem.getItemId()) {
             case R.id.navigation_home:
                 toolbar.setTitle("地图");
+                fragmentManager.beginTransaction().replace(R.id.fragment_main,new FragmentCommunication()).commit();
                 return true;
             case R.id.navigation_dashboard:
                 toolbar.setTitle("分类");
+                fragmentManager.beginTransaction().replace(R.id.fragment_main,new FragmentRecord()).commit();
                 return true;
             case R.id.navigation_notifications:
                 toolbar.setTitle("动态");
