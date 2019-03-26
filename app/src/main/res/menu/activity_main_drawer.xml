@@ -5,10 +5,6 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_upload"
-            android:icon="@drawable/ic_menu_send"
-            android:title="投稿" />
-        <item
             android:id="@+id/nav_favor"
             android:icon="@drawable/ic_people_outline_black_24dp"
             android:title="好友" />

@@ -11,4 +11,11 @@
         <item>test4</item>
         <item>test5</item>
     </array>
+    <array name="settings">
+        <item>test1</item>
+        <item>test2</item>
+        <item>test3</item>
+        <item>更换背景</item>
+        <item>test5</item>
+    </array>
 </resources>

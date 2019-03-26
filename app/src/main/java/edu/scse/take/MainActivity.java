@@ -1,17 +1,20 @@
 package edu.scse.take;
 
-import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -24,7 +27,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
@@ -35,7 +37,6 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BaiduMapOptions;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
-import com.baidu.mapapi.map.MapFragment;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.MyLocationConfiguration;
@@ -47,10 +48,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-
 public class MainActivity extends AppCompatActivity implements
-        BottomNavigationView.OnNavigationItemSelectedListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
-
+        NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
     private BroadcastReceiver mReceiver;
     private Toolbar toolbar;
     private FragmentManager fragmentManager;
@@ -60,10 +59,22 @@ public class MainActivity extends AppCompatActivity implements
     private LocationClient mLocationClient;
     private ValueAnimator animatorDrop;
     private ValueAnimator animatorArise;
-
     private float mapX;
     private float mapY;
-    private boolean hided=false;
+    private Bitmap background;
+    private boolean hided = false;
+    private FileOutputStream fos;
+    private ConstraintLayout mainLayout;
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.nav_setting:
+                startActivity(new Intent(context, ActivitySetting.class));
+                return true;
+        }
+        return false;
+    }
 
     public class MyLocationListener extends BDAbstractLocationListener {
         @Override
@@ -81,7 +92,6 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-
     @Override
     public void onClick(View v) {
 
@@ -92,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements
         FileOutputStream fileOutputStream = null;
         String moduleName = null;
         try {
-            Toast.makeText(context,"加载资源",Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "加载资源", Toast.LENGTH_SHORT).show();
             inputStream = context.getAssets().open("custom_config/" + fileName);
             byte[] b = new byte[inputStream.available()];
             inputStream.read(b);
@@ -105,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements
             fileOutputStream.write(b);
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(context,"未能加载资源",Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "未能加载资源", Toast.LENGTH_SHORT).show();
         } finally {
             try {
                 if (inputStream != null) {
@@ -125,8 +135,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context=MainActivity.this;
-        setMapCustomFile(context,"yanmou.json");
+        context = MainActivity.this;
+//        setMapCustomFile(context, "yanmou.json");
         setContentView(R.layout.activity_main);
 
         toolbar = findViewById(R.id.toolbar);
@@ -139,10 +149,10 @@ public class MainActivity extends AppCompatActivity implements
 
         fragmentManager = getSupportFragmentManager();
 
+        mainLayout = findViewById(R.id.main_layout);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
-        bottomNavigationView.setOnNavigationItemSelectedListener(this);
-        bottomNavigationView.setSelectedItemId(R.id.navigation_home);
+        bottomNavigationView.setOnNavigationItemSelectedListener(listener);
 
         IntentFilter iFilter = new IntentFilter();
         iFilter.addAction(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_ERROR);
@@ -153,10 +163,11 @@ public class MainActivity extends AppCompatActivity implements
         initAnimator();
         loadMap();
 
+        bottomNavigationView.setSelectedItemId(R.id.navigation_home);
     }
 
-    private void initAnimator(){
-        animatorArise=ValueAnimator.ofFloat(2000f,mapY);
+    private void initAnimator() {
+        animatorArise = ValueAnimator.ofFloat(2000f, mapY);
         animatorArise.setInterpolator(new OvershootInterpolator());
         animatorArise.setDuration(500);
         animatorArise.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -166,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
-        animatorDrop=ValueAnimator.ofFloat(mapY,2000f);
+        animatorDrop = ValueAnimator.ofFloat(mapY, 2000f);
         animatorDrop.setInterpolator(new OvershootInterpolator());
         animatorDrop.setDuration(500);
         animatorDrop.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -177,17 +188,16 @@ public class MainActivity extends AppCompatActivity implements
         });
     }
 
-    private void loadMap(){
-        mapView=findViewById(R.id.baidu_map);
-        baiduMap=mapView.getMap();
+    private void loadMap() {
+        mapView = findViewById(R.id.baidu_map);
+        baiduMap = mapView.getMap();
 
-        Log.i("mapview","mapX:"+mapX);
-        Log.i("mapview","mapY:"+mapY);
-        Log.i("mapview","mapHeight:"+mapView.getHeight());
-        Log.i("mapview","mapWidth:"+mapView.getWidth());
-        mapX=mapView.getX();
-//        mapY=mapView.getY()+toolbar.getHeight();
-        mapY=mapView.getY();
+        Log.i("mapview", "mapX:" + mapX);
+        Log.i("mapview", "mapY:" + mapY);
+        Log.i("mapview", "mapHeight:" + mapView.getHeight());
+        Log.i("mapview", "mapWidth:" + mapView.getWidth());
+        mapX = mapView.getX();
+        mapY = mapView.getY();
 
         BaiduMapOptions options;
 
@@ -218,21 +228,37 @@ public class MainActivity extends AppCompatActivity implements
             super.onBackPressed();
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try {
+            Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background.jpg");
+//            BackgroundSrc.setBackground(background,true);
+            background=FastBlur.fastblur(background,20);
+            mainLayout.setBackground(new BitmapDrawable(background));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     protected void onDestroy() {
         unregisterReceiver(mReceiver);
         super.onDestroy();
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_search) {
-            if(hided){
+            if (hided) {
                 showMap();
             }
             final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -253,45 +279,47 @@ public class MainActivity extends AppCompatActivity implements
             editor.putBoolean("login", false);
             editor.apply();
             finish();
-        }else if (id==R.id.hide){
-            if (hided){
+        } else if (id == R.id.hide) {
+            if (hided) {
                 item.setIcon(R.drawable.ic_map_black_24dp);
                 showMap();
-            }else {
+            } else {
                 item.setIcon(R.drawable.ic_map_black_24dp_opac);
                 hideMap();
             }
+        } else if (id == R.id.action_settings) {
+            startActivity(new Intent(context, ActivitySetting.class));
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void showMap() {
         animatorArise.start();
-        hided=false;
-    }
-    private void hideMap(){
-        animatorDrop.start();
-        hided=true;
+        hided = false;
     }
 
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-        switch (menuItem.getItemId()) {
-            case R.id.navigation_home:
-                toolbar.setTitle("地图");
-                fragmentManager.beginTransaction().replace(R.id.fragment_main,new FragmentCommunication()).commit();
-                return true;
-            case R.id.navigation_dashboard:
-                toolbar.setTitle("分类");
-                fragmentManager.beginTransaction().replace(R.id.fragment_main,new FragmentRecord()).commit();
-                return true;
-            case R.id.navigation_notifications:
-                toolbar.setTitle("动态");
-                return true;
-            case R.id.navigation_shop:
-                toolbar.setTitle("商城");
-                return true;
-        }
-        return false;
+    private void hideMap() {
+        animatorDrop.start();
+        hided = true;
     }
+
+    BottomNavigationView.OnNavigationItemSelectedListener listener = new BottomNavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+            switch (menuItem.getItemId()) {
+                case R.id.navigation_home:
+                    toolbar.setTitle("动态");
+                    if (!hided) hideMap();
+                    fragmentManager.beginTransaction().replace(R.id.fragment_main, new FragmentCommunication()).commit();
+                    return true;
+                case R.id.navigation_dashboard:
+                    if (!hided) hideMap();
+                    toolbar.setTitle("记录");
+                    fragmentManager.beginTransaction().replace(R.id.fragment_main, new FragmentRecord()).commit();
+                    return true;
+            }
+            return false;
+        }
+    };
+
 }
