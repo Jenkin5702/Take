@@ -36,11 +36,15 @@ import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BaiduMapOptions;
+import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.Marker;
+import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
+import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 
 import java.io.File;
@@ -48,33 +52,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class MainActivity extends AppCompatActivity implements
-        NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private Toolbar toolbar;
     private FragmentManager fragmentManager;
     private MapView mapView;
     private BaiduMap baiduMap;
     private Context context;
-    private LocationClient mLocationClient;
     private ValueAnimator animatorDrop;
     private ValueAnimator animatorArise;
+    private LocationClient mLocationClient;
     private float mapX;
     private float mapY;
-    private Bitmap background;
     private boolean hided = false;
-    private FileOutputStream fos;
     private ConstraintLayout mainLayout;
-
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-        switch (menuItem.getItemId()) {
-            case R.id.nav_setting:
-                startActivity(new Intent(context, ActivitySetting.class));
-                return true;
-        }
-        return false;
-    }
 
     public class MyLocationListener extends BDAbstractLocationListener {
         @Override
@@ -93,50 +84,9 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onClick(View v) {
-
-    }
-
-    private void setMapCustomFile(Context context, String fileName) {
-        InputStream inputStream = null;
-        FileOutputStream fileOutputStream = null;
-        String moduleName = null;
-        try {
-            Toast.makeText(context, "加载资源", Toast.LENGTH_SHORT).show();
-            inputStream = context.getAssets().open("custom_config/" + fileName);
-            byte[] b = new byte[inputStream.available()];
-            inputStream.read(b);
-            moduleName = context.getFilesDir().getAbsolutePath();
-            File file = new File(moduleName + "/" + fileName);
-            if (file.exists()) file.delete();
-            file.createNewFile();
-            fileOutputStream = new FileOutputStream(file);
-            //将自定义样式文件写入本地
-            fileOutputStream.write(b);
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(context, "未能加载资源", Toast.LENGTH_SHORT).show();
-        } finally {
-            try {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-                if (fileOutputStream != null) {
-                    fileOutputStream.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-//设置自定义样式文件
-        MapView.setCustomMapStylePath(moduleName + "/" + fileName);
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = MainActivity.this;
-//        setMapCustomFile(context, "yanmou.json");
         setContentView(R.layout.activity_main);
 
         toolbar = findViewById(R.id.toolbar);
@@ -147,12 +97,16 @@ public class MainActivity extends AppCompatActivity implements
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
+
         fragmentManager = getSupportFragmentManager();
 
         mainLayout = findViewById(R.id.main_layout);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
         bottomNavigationView.setOnNavigationItemSelectedListener(listener);
+
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(navigationListener);
 
         IntentFilter iFilter = new IntentFilter();
         iFilter.addAction(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_ERROR);
@@ -217,6 +171,25 @@ public class MainActivity extends AppCompatActivity implements
         baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(17));
         baiduMap.setMyLocationConfiguration(new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL, false, BitmapDescriptorFactory.fromResource(R.mipmap.icon_gcoding)));
         baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(new LatLng(39.24249, 117.064865))); //设置起始位置
+
+        baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle("地点").setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                }).setNegativeButton("关闭", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                }).show();
+                return true;
+            }
+        });
     }
 
     @Override
@@ -231,21 +204,39 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onResume() {
+        mapView.onResume();
         super.onResume();
-        try {
-            Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background.jpg");
-//            BackgroundSrc.setBackground(background,true);
-            background=FastBlur.fastblur(background,20);
-            mainLayout.setBackground(new BitmapDrawable(background));
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(getSharedPreferences("blur",MODE_PRIVATE).getBoolean("blur_bg",false)){
+            try {
+                Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background_blur.jpg");
+                mainLayout.setBackground(new BitmapDrawable(background));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }else{
+            try {
+                Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background.jpg");
+                mainLayout.setBackground(new BitmapDrawable(background));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @Override
     protected void onDestroy() {
+        mLocationClient.stop();
+        baiduMap.setMyLocationEnabled(false);
+        mapView.onDestroy();
+        mapView = null;
         unregisterReceiver(mReceiver);
         super.onDestroy();
+    }
+
+    @Override
+    protected void onPause() {
+        mapView.onPause();
+        super.onPause();
     }
 
     @Override
@@ -266,11 +257,14 @@ public class MainActivity extends AppCompatActivity implements
             builder.setTitle("查找地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    LatLng llText = new LatLng(39.246, 117.063);
+                    LatLng point = new LatLng(39.246, 117.063);
                     //设置起始位置
-                    baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(llText));
+                    baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(point));
                     baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(20));
                     baiduMap.clear();
+                    BitmapDescriptor bitmap = BitmapDescriptorFactory.fromResource(R.drawable.icon_geo);
+                    OverlayOptions option = new MarkerOptions().position(point).icon(bitmap);
+                    baiduMap.addOverlay(option);
                 }
             }).show();
         } else if (id == R.id.action_exit) {
@@ -302,6 +296,24 @@ public class MainActivity extends AppCompatActivity implements
         animatorDrop.start();
         hided = true;
     }
+
+    NavigationView.OnNavigationItemSelectedListener navigationListener = new NavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+            switch (menuItem.getItemId()) {
+                case R.id.nav_setting:
+                    startActivity(new Intent(context, ActivitySetting.class));
+                    return true;
+                case R.id.nav_message:
+                    startActivity(new Intent(context, ActivityMessage.class));
+                    return true;
+                case R.id.nav_friend:
+                    startActivity(new Intent(context, ActivityFriend.class));
+                    return true;
+            }
+            return false;
+        }
+    };
 
     BottomNavigationView.OnNavigationItemSelectedListener listener = new BottomNavigationView.OnNavigationItemSelectedListener() {
         @Override

@@ -20,14 +20,20 @@ public class ActivitySetting extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        try {
-            Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background.jpg");
-//            BackgroundSrc.setBackground(background,true);
-            background=FastBlur.fastblur(background,20);
-            mainLayout.setBackground(new BitmapDrawable(background));
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(getSharedPreferences("blur",MODE_PRIVATE).getBoolean("blur_bg",false)){
+            try {
+                Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background_blur.jpg");
+                mainLayout.setBackground(new BitmapDrawable(background));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }else{
+            try {
+                Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background.jpg");
+                mainLayout.setBackground(new BitmapDrawable(background));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
     Toolbar toolbar;

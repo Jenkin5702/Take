@@ -5,7 +5,7 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_favor"
+            android:id="@+id/nav_friend"
             android:icon="@drawable/ic_people_outline_black_24dp"
             android:title="好友" />
         <item
