@@ -1,6 +1,7 @@
 package edu.scse.take;
 
 import android.animation.ValueAnimator;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,7 +11,10 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
@@ -66,6 +70,18 @@ public class MainActivity extends AppCompatActivity {
     private float mapY;
     private boolean hided = false;
     private ConstraintLayout mainLayout;
+    private Bitmap bitmapNav;
+    private NavigationView navigationView;
+
+    Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            if (msg.arg1 == 1) {
+                navigationView.setBackground(new BitmapDrawable(bitmapNav));
+            }
+        }
+    };
 
     public class MyLocationListener extends BDAbstractLocationListener {
         @Override
@@ -105,14 +121,26 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
         bottomNavigationView.setOnNavigationItemSelectedListener(listener);
 
-        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(navigationListener);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                bitmapNav = BitmapFactory.decodeResource(getResources(), R.drawable.tbg);
+                bitmapNav = FastBlur.fastblur(bitmapNav, 24);
+                Message msg = new Message();
+                msg.arg1 = 1;
+                handler.sendMessage(msg);
+            }
+        }).start();
+
 
         IntentFilter iFilter = new IntentFilter();
         iFilter.addAction(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_ERROR);
         iFilter.addAction(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_OK);
         mReceiver = new SDKReceiver();
         registerReceiver(mReceiver, iFilter);
+
 
         initAnimator();
         loadMap();
@@ -206,14 +234,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         mapView.onResume();
         super.onResume();
-        if(getSharedPreferences("blur",MODE_PRIVATE).getBoolean("blur_bg",false)){
+        if (getSharedPreferences("blur", MODE_PRIVATE).getBoolean("blur_bg", false)) {
             try {
                 Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background_blur.jpg");
                 mainLayout.setBackground(new BitmapDrawable(background));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }else{
+        } else {
             try {
                 Bitmap background = BitmapFactory.decodeFile("/storage/emulated/0/uclean/background.jpg");
                 mainLayout.setBackground(new BitmapDrawable(background));
@@ -283,6 +311,8 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (id == R.id.action_settings) {
             startActivity(new Intent(context, ActivitySetting.class));
+        } else if (id == R.id.notification) {
+
         }
         return super.onOptionsItemSelected(item);
     }
