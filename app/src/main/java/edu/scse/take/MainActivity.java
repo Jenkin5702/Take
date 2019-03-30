@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private ConstraintLayout mainLayout;
     private Bitmap bitmapNav;
     private NavigationView navigationView;
+    private boolean notificcation=false;
 
     Handler handler = new Handler() {
         @Override
@@ -207,14 +208,9 @@ public class MainActivity extends AppCompatActivity {
                 builder.setTitle("地点").setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-
+                        startActivity(new Intent(context,ActivityDeligation.class));
                     }
-                }).setNegativeButton("关闭", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                    }
-                }).show();
+                }).setNegativeButton("关闭", null).show();
                 return true;
             }
         });
@@ -274,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(final MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_search) {
             if (hided) {
@@ -312,7 +308,33 @@ public class MainActivity extends AppCompatActivity {
         } else if (id == R.id.action_settings) {
             startActivity(new Intent(context, ActivitySetting.class));
         } else if (id == R.id.notification) {
-
+            if(notificcation){
+                AlertDialog.Builder builder=new AlertDialog.Builder(context)
+                        .setTitle("通知")
+                        .setMessage("停止接收委托消息?")
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                notificcation=false;
+                                item.setIcon(R.drawable.ic_notifications_none_black_24dp);
+                                Toast.makeText(context,"已停止接收委托消息",Toast.LENGTH_SHORT).show();
+                            }
+                        }).setNegativeButton("取消",null);
+                builder.show();
+            }else{
+                AlertDialog.Builder builder=new AlertDialog.Builder(context)
+                        .setTitle("通知")
+                        .setMessage("开始接收委托消息?")
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                notificcation=true;
+                                item.setIcon(R.drawable.ic_notifications_black_24dp);
+                                Toast.makeText(context,"已开启接收委托消息",Toast.LENGTH_SHORT).show();
+                            }
+                        }).setNegativeButton("取消",null);
+                builder.show();
+            }
         }
         return super.onOptionsItemSelected(item);
     }

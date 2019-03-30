@@ -54,6 +54,8 @@
         <activity android:name=".ActivityChangeBackground"/>
         <activity android:name=".ActivityMessage" />
         <activity android:name=".ActivityFriend" />
+        <activity android:name=".ActivityDeligation" />
+
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="gavinli.translator"
