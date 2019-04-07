@@ -27,10 +27,14 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+import android.widget.AdapterView;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
@@ -55,6 +59,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.zip.Inflater;
 
 public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
@@ -73,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap bitmapNav;
     private NavigationView navigationView;
     private boolean notificcation=false;
+    private int selectedPosition;
+    private Locations myLocation;
 
     Handler handler = new Handler() {
         @Override
@@ -96,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
                         .longitude(location.getLongitude())
                         .build();
                 baiduMap.setMyLocationData(locData);
+                myLocation=DataLoader.IMWhere(location.getLongitude(),location.getLatitude());
             }
         }
     }
@@ -142,11 +150,16 @@ public class MainActivity extends AppCompatActivity {
         mReceiver = new SDKReceiver();
         registerReceiver(mReceiver, iFilter);
 
-
         initAnimator();
         loadMap();
 
         bottomNavigationView.setSelectedItemId(R.id.navigation_home);
+
+        SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
+        boolean logedin=sp.getBoolean("login", false);
+        if(!logedin){
+            startActivity(new Intent(context, ActivityLogin.class));
+        }
     }
 
     private void initAnimator() {
@@ -205,7 +218,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onMarkerClick(Marker marker) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setTitle("地点").setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
+                builder.setTitle("地点")
+                        .setMessage("这里有"+10+"个人")
+                        .setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         startActivity(new Intent(context,ActivityDeligation.class));
@@ -277,11 +292,23 @@ public class MainActivity extends AppCompatActivity {
                 showMap();
             }
             final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setView(R.layout.dialog_search);
-            builder.setTitle("查找地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
+            final View view= LayoutInflater.from(context).inflate(R.layout.dialog_search,null);
+            final ListView lv=view.findViewById(R.id.lv_search);
+            final EditText rt=view.findViewById(R.id.editText);
+            lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    rt.setText(lv.getAdapter().getItem(position).toString());
+                    selectedPosition=position;
+                }
+            });
+            lv.setAdapter(new ListAdapterSelectPlace(context));
+            builder.setView(view);
+            builder.setTitle("选择地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    LatLng point = new LatLng(39.246, 117.063);
+                    Locations loc=Locations.values()[selectedPosition];
+                    LatLng point = new LatLng(loc.lng,loc.lat);
                     //设置起始位置
                     baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(point));
                     baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(20));
@@ -306,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
                 hideMap();
             }
         } else if (id == R.id.action_settings) {
-            startActivity(new Intent(context, ActivitySetting.class));
+            Toast.makeText(context,myLocation.name(),Toast.LENGTH_SHORT).show();
         } else if (id == R.id.notification) {
             if(notificcation){
                 AlertDialog.Builder builder=new AlertDialog.Builder(context)

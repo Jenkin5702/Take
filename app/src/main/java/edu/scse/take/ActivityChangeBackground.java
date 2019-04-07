@@ -213,10 +213,7 @@ public class ActivityChangeBackground extends AppCompatActivity {
             startActivityForResult(intent, 1006);
 //            startActivity(intent);
         }else if(requestCode==1006&&resultCode==RESULT_OK){
-//            Uri bgUri=Uri.fromFile(new File("/storage/emulated/0/uclean/potrait.jpg"));
-//            Bundle bundle=new Bundle();
-//
-//            bitmap = ImgUtil.handleImage(this, data);
+            checkBox.setChecked(false);
             bitmap=BitmapFactory.decodeFile("/storage/emulated/0/uclean/potrait.jpg");
             imageView.setBackgroundColor(Color.TRANSPARENT);
             imageView.setImageBitmap(bitmap);

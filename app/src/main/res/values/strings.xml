@@ -12,10 +12,10 @@
         <item>test5</item>
     </array>
     <array name="settings">
-        <item>test1</item>
-        <item>test2</item>
-        <item>test3</item>
+        <item>隐私设置</item>
+        <item>检查更新</item>
         <item>更换背景</item>
-        <item>test5</item>
+        <item>消息提醒</item>
+        <item>退出登录</item>
     </array>
 </resources>

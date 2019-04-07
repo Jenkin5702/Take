@@ -55,6 +55,9 @@
         <activity android:name=".ActivityMessage" />
         <activity android:name=".ActivityFriend" />
         <activity android:name=".ActivityDeligation" />
+        <activity android:name=".ActivityTalk" />
+        <activity android:name=".ActivityLogin" />
+        <activity android:name=".ActivityRegister" />
 
         <provider
             android:name="android.support.v4.content.FileProvider"

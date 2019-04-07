@@ -57,7 +57,7 @@ public class ActivitySetting extends AppCompatActivity {
         settingList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if(position==3){
+                if(position==2){
                     startActivity(new Intent(ActivitySetting.this,ActivityChangeBackground.class));
                 }else{
                     Toast.makeText(ActivitySetting.this,"item",Toast.LENGTH_SHORT).show();

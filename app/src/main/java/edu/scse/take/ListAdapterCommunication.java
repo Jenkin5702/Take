@@ -1,14 +1,22 @@
 package edu.scse.take;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.ColorDrawable;
+import android.support.design.widget.Snackbar;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -53,19 +61,34 @@ public class ListAdapterCommunication extends BaseAdapter {
             viewHolder.title=convertView.findViewById(R.id.textView4);
             viewHolder.btnFavor=convertView.findViewById(R.id.imageButton3);
 
+            viewHolder.portrait.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AlertDialog.Builder builder=new AlertDialog.Builder(context);
+                    View view=View.inflate(context,R.layout.activity_person_info,null);
+                    Button btnAddFriend=view.findViewById(R.id.btn_add_friend);
+                    btnAddFriend.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Toast.makeText(context,"123",Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    builder.setView(view).show();
+                }
+            });
+
             viewHolder.btnFavor.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if(!favored){
-                        viewHolder.btnFavor.setImageResource(R.drawable.ic_star_accent_24dp);
+                        viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_read_24dp);
                         favored=true;
                     }else{
-                        viewHolder.btnFavor.setImageResource(R.drawable.ic_star_black_24dp);
+                        viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_black_24dp);
                         favored=false;
                     }
                 }
             });
-            viewHolder.btnResend=convertView.findViewById(R.id.imageButton2);
             viewHolder.btnComment=convertView.findViewById(R.id.imageButton);
             viewHolder.image.setOnClickListener(new View.OnClickListener() {
                 @Override

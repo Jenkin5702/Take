@@ -8,8 +8,8 @@
 
     <edu.scse.take.CircleImageView
         android:id="@+id/imageView3"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_marginStart="16dp"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
@@ -44,7 +44,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:textSize="14sp"
+        android:textSize="18sp"
         android:textColor="@android:color/black"
         android:text="内容abcdefg12345678"
         android:singleLine="false"
@@ -53,8 +53,8 @@
 
     <ImageView
         android:id="@+id/imageView4"
-        android:layout_width="381dp"
-        android:layout_height="257dp"
+        android:layout_width="380dp"
+        android:layout_height="260dp"
         android:layout_marginStart="16dp"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
@@ -80,23 +80,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:layout_marginEnd="0dp"
         android:background="@android:color/transparent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/imageView4"
         app:layout_constraintTop_toBottomOf="@+id/imageView4"
         app:srcCompat="@drawable/ic_textsms_black_24dp" />
 
-    <ImageButton
-        android:id="@+id/imageButton2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="60dp"
-        android:layout_marginLeft="60dp"
-        android:layout_marginTop="0dp"
-        android:background="@android:color/transparent"
-        app:layout_constraintStart_toEndOf="@+id/imageButton"
-        app:layout_constraintTop_toTopOf="@+id/imageButton"
-        app:srcCompat="@drawable/ic_menu_send" />
 
     <ImageButton
         android:id="@+id/imageButton3"
@@ -107,6 +96,16 @@
         android:background="@android:color/transparent"
         app:layout_constraintEnd_toStartOf="@+id/imageButton"
         app:layout_constraintTop_toTopOf="@+id/imageButton"
-        app:srcCompat="@drawable/ic_star_black_24dp" />
+        app:srcCompat="@drawable/ic_thumb_up_black_24dp" />
 
+    <TextView
+        android:id="@+id/num_good"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="0dp"
+        android:textSize="18sp"
+        android:text="13"
+        app:layout_constraintBottom_toBottomOf="@+id/imageButton3"
+        app:layout_constraintStart_toEndOf="@+id/imageButton3" />
 </android.support.constraint.ConstraintLayout>
