@@ -1,19 +1,20 @@
 package edu.scse.take;
 
 import android.animation.ValueAnimator;
-import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
@@ -55,19 +56,12 @@ import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.zip.Inflater;
-
 public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private Toolbar toolbar;
     private FragmentManager fragmentManager;
     private MapView mapView;
     private BaiduMap baiduMap;
-    private Context context;
     private ValueAnimator animatorDrop;
     private ValueAnimator animatorArise;
     private LocationClient mLocationClient;
@@ -77,17 +71,33 @@ public class MainActivity extends AppCompatActivity {
     private ConstraintLayout mainLayout;
     private Bitmap bitmapNav;
     private NavigationView navigationView;
-    private boolean notificcation=false;
+    private boolean notificcation = false;
     private int selectedPosition;
     private Locations myLocation;
+    private TakeService takeService;
+    private boolean isBound = false;
 
-    Handler handler = new Handler() {
+    private Context context;
+
+    private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             if (msg.arg1 == 1) {
                 navigationView.setBackground(new BitmapDrawable(bitmapNav));
             }
+        }
+    };
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            takeService = ((TakeService.LocalBinder) service).getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            takeService = null;
         }
     };
 
@@ -103,7 +113,8 @@ public class MainActivity extends AppCompatActivity {
                         .longitude(location.getLongitude())
                         .build();
                 baiduMap.setMyLocationData(locData);
-                myLocation=DataLoader.IMWhere(location.getLongitude(),location.getLatitude());
+                myLocation = DataLoader.IMWhere(location.getLongitude(), location.getLatitude());
+                DataLoader.locations=myLocation;
             }
         }
     }
@@ -156,8 +167,8 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setSelectedItemId(R.id.navigation_home);
 
         SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
-        boolean logedin=sp.getBoolean("login", false);
-        if(!logedin){
+        boolean logedin = sp.getBoolean("login", false);
+        if (!logedin) {
             startActivity(new Intent(context, ActivityLogin.class));
         }
     }
@@ -219,13 +230,13 @@ public class MainActivity extends AppCompatActivity {
             public boolean onMarkerClick(Marker marker) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setTitle("地点")
-                        .setMessage("这里有"+10+"个人")
+                        .setMessage("这里有" + 10 + "个人")
                         .setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        startActivity(new Intent(context,ActivityDeligation.class));
-                    }
-                }).setNegativeButton("关闭", null).show();
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                startActivity(new Intent(context, ActivityDeligation.class));
+                            }
+                        }).setNegativeButton("关闭", null).show();
                 return true;
             }
         });
@@ -292,14 +303,14 @@ public class MainActivity extends AppCompatActivity {
                 showMap();
             }
             final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            final View view= LayoutInflater.from(context).inflate(R.layout.dialog_search,null);
-            final ListView lv=view.findViewById(R.id.lv_search);
-            final EditText rt=view.findViewById(R.id.editText);
+            final View view = LayoutInflater.from(context).inflate(R.layout.dialog_search, null);
+            final ListView lv = view.findViewById(R.id.lv_search);
+            final EditText rt = view.findViewById(R.id.editText);
             lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     rt.setText(lv.getAdapter().getItem(position).toString());
-                    selectedPosition=position;
+                    selectedPosition = position;
                 }
             });
             lv.setAdapter(new ListAdapterSelectPlace(context));
@@ -307,8 +318,8 @@ public class MainActivity extends AppCompatActivity {
             builder.setTitle("选择地点").setPositiveButton("查找", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    Locations loc=Locations.values()[selectedPosition];
-                    LatLng point = new LatLng(loc.lng,loc.lat);
+                    Locations loc = Locations.values()[selectedPosition];
+                    LatLng point = new LatLng(loc.lng, loc.lat);
                     //设置起始位置
                     baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(point));
                     baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(20));
@@ -333,33 +344,45 @@ public class MainActivity extends AppCompatActivity {
                 hideMap();
             }
         } else if (id == R.id.action_settings) {
-            Toast.makeText(context,myLocation.name(),Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, myLocation.name(), Toast.LENGTH_SHORT).show();
         } else if (id == R.id.notification) {
-            if(notificcation){
-                AlertDialog.Builder builder=new AlertDialog.Builder(context)
+
+
+
+
+            if (notificcation) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(context)
                         .setTitle("通知")
                         .setMessage("停止接收委托消息?")
                         .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                notificcation=false;
+                                notificcation = false;
                                 item.setIcon(R.drawable.ic_notifications_none_black_24dp);
-                                Toast.makeText(context,"已停止接收委托消息",Toast.LENGTH_SHORT).show();
+                                if(isBound){
+                                    isBound = false;
+                                    unbindService(mConnection);
+                                    takeService = null;
+                                }
                             }
-                        }).setNegativeButton("取消",null);
+                        }).setNegativeButton("取消", null);
                 builder.show();
-            }else{
-                AlertDialog.Builder builder=new AlertDialog.Builder(context)
+            } else {
+                AlertDialog.Builder builder = new AlertDialog.Builder(context)
                         .setTitle("通知")
                         .setMessage("开始接收委托消息?")
                         .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                notificcation=true;
+                                notificcation = true;
                                 item.setIcon(R.drawable.ic_notifications_black_24dp);
-                                Toast.makeText(context,"已开启接收委托消息",Toast.LENGTH_SHORT).show();
+                                if(!isBound){
+                                    final Intent serviceIntent = new Intent(context, TakeService.class);
+                                    bindService(serviceIntent, mConnection, Context.BIND_AUTO_CREATE);
+                                    isBound = true;
+                                }
                             }
-                        }).setNegativeButton("取消",null);
+                        }).setNegativeButton("取消", null);
                 builder.show();
             }
         }

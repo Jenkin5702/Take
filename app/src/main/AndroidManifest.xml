@@ -20,6 +20,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
+
     <application
         android:name=".MapsActivity"
         android:allowBackup="true"
@@ -72,6 +75,7 @@
             android:enabled="true"
             android:process=":remote"/>
         <service android:name=".ServiceNotify" />
+        <service android:name=".TakeService" />
     </application>
 
 </manifest>
