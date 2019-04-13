@@ -213,11 +213,14 @@ public class ActivityChangeBackground extends AppCompatActivity {
             startActivityForResult(intent, 1006);
 //            startActivity(intent);
         }else if(requestCode==1006&&resultCode==RESULT_OK){
-            checkBox.setChecked(false);
+//            checkBox.setChecked(false);
             bitmap=BitmapFactory.decodeFile("/storage/emulated/0/uclean/potrait.jpg");
             imageView.setBackgroundColor(Color.TRANSPARENT);
             imageView.setImageBitmap(bitmap);
-            checkBox.setChecked(false);
+//            checkBox.setChecked(false);
+            SharedPreferences.Editor editor=getSharedPreferences("blur",MODE_PRIVATE).edit();
+            editor.putBoolean("blur_bg",false);
+            editor.apply();
         }
     }
 

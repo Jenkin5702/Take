@@ -11,12 +11,16 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
@@ -35,7 +39,9 @@ import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baidu.location.BDAbstractLocationListener;
@@ -56,6 +62,10 @@ import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 
+import java.io.File;
+
+import static edu.scse.take.DataLoader.locData;
+
 public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private Toolbar toolbar;
@@ -73,18 +83,35 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private boolean notificcation = false;
     private int selectedPosition;
-    private Locations myLocation;
+    //    private Locations myLocation;
     private TakeService takeService;
     private boolean isBound = false;
 
     private Context context;
 
+    public static Handler handler2 = new Handler();
+
+    private String mokuteki;
+
+    int n = 0;
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             if (msg.arg1 == 1) {
                 navigationView.setBackground(new BitmapDrawable(bitmapNav));
+            } else if (msg.arg1 == 2) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle("地点")
+                        .setMessage("这里有" + n + "个人")
+                        .setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Intent intent = new Intent(context, ActivityDeligation.class);
+                                intent.putExtra("mokuteki", mokuteki);
+                                startActivity(intent);
+                            }
+                        }).setNegativeButton("关闭", null).show();
             }
         }
     };
@@ -101,23 +128,30 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    public class MyLocationListener extends BDAbstractLocationListener {
+    private Thread updateLocation = new Thread(new Runnable() {
         @Override
-        public void onReceiveLocation(BDLocation location) {
-            //mapView 销毁后不在处理新接收的位置
-            if (location != null && mapView != null) {
-                MyLocationData locData = new MyLocationData.Builder()
-                        .accuracy(location.getRadius())
-                        .direction(location.getDirection())
-                        .latitude(location.getLatitude())// 此处设置开发者获取到的方向信息，顺时针0-360
-                        .longitude(location.getLongitude())
-                        .build();
-                baiduMap.setMyLocationData(locData);
-                myLocation = DataLoader.IMWhere(location.getLongitude(), location.getLatitude());
-                DataLoader.locations=myLocation;
-            }
+        public void run() {
+            baiduMap.setMyLocationData(DataLoader.locData);
         }
-    }
+    });
+
+//    public class MyLocationListener extends BDAbstractLocationListener {
+//        @Override
+//        public void onReceiveLocation(BDLocation location) {
+//            //mapView 销毁后不在处理新接收的位置
+//            if (location != null && mapView != null) {
+//                MyLocationData locData = new MyLocationData.Builder()
+//                        .accuracy(location.getRadius())
+//                        .direction(location.getDirection())
+//                        .latitude(location.getLatitude())// 此处设置开发者获取到的方向信息，顺时针0-360
+//                        .longitude(location.getLongitude())
+//                        .build();
+//                baiduMap.setMyLocationData(locData);
+//                myLocation = DataLoader.IMWhere(location.getLongitude(), location.getLatitude());
+//                DataLoader.locations=myLocation;
+//            }
+//        }
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         }).start();
 
 
+
         IntentFilter iFilter = new IntentFilter();
         iFilter.addAction(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_ERROR);
         iFilter.addAction(SDKInitializer.SDK_BROADTCAST_ACTION_STRING_PERMISSION_CHECK_OK);
@@ -164,12 +199,70 @@ public class MainActivity extends AppCompatActivity {
         initAnimator();
         loadMap();
 
-        bottomNavigationView.setSelectedItemId(R.id.navigation_home);
+        bottomNavigationView.setSelectedItemId(R.id.navigation_dashboard);
 
         SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
         boolean logedin = sp.getBoolean("login", false);
         if (!logedin) {
             startActivity(new Intent(context, ActivityLogin.class));
+        }
+        initHeader();
+    }
+    public static final int REQUEST_CODE=2007;
+    public Bitmap bitmap;
+    public CircleImageView headerIv;
+
+    String username;
+    String intros;
+
+    private void initHeader(){
+        View view=navigationView.getHeaderView(navigationView.getHeaderCount()-1);
+        TextView name1=view.findViewById(R.id.tv_username);
+        TextView intro=view.findViewById(R.id.tv_id);
+        SharedPreferences shp=getSharedPreferences("loginStatus",Context.MODE_PRIVATE);
+        username=shp.getString("username","");
+        intros=shp.getString("intro","");
+        name1.setText(username);
+        intro.setText(intros);
+        headerIv=view.findViewById(R.id.imageView);
+        try {
+            Bitmap headerBitmp = BitmapFactory.decodeFile("/storage/emulated/0/uclean/"+username+"headerIv.jpg");
+            headerIv.setImageBitmap(headerBitmp);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        headerIv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, REQUEST_CODE);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            Intent intent = new Intent("com.android.camera.action.CROP");
+            intent.setDataAndType(data.getData(), "image/*");
+            intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            //下面这个crop=true是设置在开启的Intent中设置显示的VIEW可裁剪
+            intent.putExtra("crop", "true");
+            // aspectX aspectY 是宽高的比例
+            intent.putExtra("aspectX", 9);
+            intent.putExtra("aspectY", 9);
+            // outputX outputY 是裁剪图片宽高
+            intent.putExtra("outputX", 200);
+            intent.putExtra("outputY", 200);
+            intent.putExtra("return-data", false);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(
+                    new File("/storage/emulated/0/uclean/"+username+"headerIv.jpg")));
+            startActivityForResult(intent, 1006);
+        }else if(requestCode==1006&&resultCode==RESULT_OK){
+            bitmap=BitmapFactory.decodeFile("/storage/emulated/0/uclean/"+username+"headerIv.jpg");
+            headerIv.setBackgroundColor(Color.TRANSPARENT);
+            headerIv.setImageBitmap(bitmap);
         }
     }
 
@@ -195,14 +288,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private int numOfPeople = 0;
+
     private void loadMap() {
         mapView = findViewById(R.id.baidu_map);
         baiduMap = mapView.getMap();
 
-        Log.i("mapview", "mapX:" + mapX);
-        Log.i("mapview", "mapY:" + mapY);
-        Log.i("mapview", "mapHeight:" + mapView.getHeight());
-        Log.i("mapview", "mapWidth:" + mapView.getWidth());
         mapX = mapView.getX();
         mapY = mapView.getY();
 
@@ -217,29 +308,30 @@ public class MainActivity extends AppCompatActivity {
         option.setCoorType("bd09ll"); // 设置坐标类型
         option.setScanSpan(1000);
         mLocationClient.setLocOption(option);
-        mLocationClient.registerLocationListener(new MyLocationListener());
+        mLocationClient.registerLocationListener(new DataLoader.MyLocationListener());
         mLocationClient.start(); //开启地图定位图层
 
         baiduMap.setMyLocationEnabled(true); //开启地图定位图层
         baiduMap.setMapStatus(MapStatusUpdateFactory.zoomTo(17));
         baiduMap.setMyLocationConfiguration(new MyLocationConfiguration(MyLocationConfiguration.LocationMode.NORMAL, false, BitmapDescriptorFactory.fromResource(R.mipmap.icon_gcoding)));
         baiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(new LatLng(39.24249, 117.064865))); //设置起始位置
-
+        updateLocation.start();
         baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setTitle("地点")
-                        .setMessage("这里有" + 10 + "个人")
-                        .setPositiveButton("发布委托", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                startActivity(new Intent(context, ActivityDeligation.class));
-                            }
-                        }).setNegativeButton("关闭", null).show();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        n = DataLoader.propleNum(DataLoader.locations);
+                        Message msg = new Message();
+                        msg.arg1 = 2;
+                        handler.sendMessage(msg);
+                    }
+                }).start();
                 return true;
             }
         });
+
     }
 
     @Override
@@ -310,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     rt.setText(lv.getAdapter().getItem(position).toString());
+                    mokuteki = lv.getAdapter().getItem(position).toString();
                     selectedPosition = position;
                 }
             });
@@ -344,12 +437,8 @@ public class MainActivity extends AppCompatActivity {
                 hideMap();
             }
         } else if (id == R.id.action_settings) {
-            Toast.makeText(context, myLocation.name(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, DataLoader.locations.name(), Toast.LENGTH_SHORT).show();
         } else if (id == R.id.notification) {
-
-
-
-
             if (notificcation) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(context)
                         .setTitle("通知")
@@ -359,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog, int which) {
                                 notificcation = false;
                                 item.setIcon(R.drawable.ic_notifications_none_black_24dp);
-                                if(isBound){
+                                if (isBound) {
                                     isBound = false;
                                     unbindService(mConnection);
                                     takeService = null;
@@ -376,7 +465,7 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog, int which) {
                                 notificcation = true;
                                 item.setIcon(R.drawable.ic_notifications_black_24dp);
-                                if(!isBound){
+                                if (!isBound) {
                                     final Intent serviceIntent = new Intent(context, TakeService.class);
                                     bindService(serviceIntent, mConnection, Context.BIND_AUTO_CREATE);
                                     isBound = true;

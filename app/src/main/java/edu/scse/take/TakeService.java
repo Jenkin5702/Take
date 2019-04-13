@@ -11,12 +11,30 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.widget.Toast;
+
+import com.baidu.location.BDAbstractLocationListener;
+import com.baidu.location.BDLocation;
+import com.baidu.mapapi.map.MyLocationData;
 
 public class TakeService extends Service {
     private final IBinder mBinder = new LocalBinder();
+    Handler handler=new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            String result= (String) msg.obj;
+            if(result.equals("YES")){
+                sendNoti();
+            }
+            Log.e("result",result);
+        }
+    };
     Locations locWhenJoin;
     Thread messageThread=new Thread(new Runnable() {
         @Override
@@ -27,8 +45,10 @@ public class TakeService extends Service {
                 while(!Thread.interrupted()){
 //                    double randomDouble = Math.random();
 //                    ThreadRandomServiceDemo.UpdateGUI(randomDouble);
-
-                    Thread.sleep(10000);
+                    Message msg=new Message();
+                    msg.obj=DataLoader.newMessageOccurs();
+                    handler.sendMessage(msg);
+                    Thread.sleep(5000);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -38,7 +58,6 @@ public class TakeService extends Service {
 
         }
     });
-
     private static final int NOTIFICATION_ID = 1001;
     private void sendNoti() {
         //1、NotificationManager
@@ -76,7 +95,7 @@ public class TakeService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        sendNoti();
+//        sendNoti();
         Toast.makeText(this, "已开始接收委托消息", Toast.LENGTH_SHORT).show();
         if (!messageThread.isAlive()){
             messageThread.start();

@@ -24,6 +24,8 @@ public class ActivityLogin extends AppCompatActivity {
             }else if(msg.arg1==2){
                 Toast.makeText(ActivityLogin.this,"欢迎回来",Toast.LENGTH_SHORT).show();
                 finish();
+            }else if(msg.arg1==3){
+                Toast.makeText(ActivityLogin.this,"响应消失了",Toast.LENGTH_SHORT).show();
             }
         }
     };
@@ -51,19 +53,23 @@ public class ActivityLogin extends AppCompatActivity {
                             handler.sendMessage(msg);
                         }else if(DataLoader.login(username,password)){
                             //TODO 把下面的代码放进来
-
-                        }else{
                             SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
                             SharedPreferences.Editor editor = sp.edit();
                             editor.putBoolean("login", true);
                             editor.putString("username",etUsername.getText().toString());
                             editor.putString("password",etPassword.getText().toString());
                             editor.apply();
+                            DataLoader.username=etUsername.getText().toString();
                             Message msg=new Message();
                             msg.arg1=2;
                             handler.sendMessage(msg);
-                        }
 
+                        }else{
+
+                            Message msg=new Message();
+                            msg.arg1=3;
+                            handler.sendMessage(msg);
+                        }
                     }
                 }).start();
             }

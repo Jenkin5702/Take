@@ -1,5 +1,6 @@
 package edu.scse.take;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -8,6 +9,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -27,39 +29,43 @@ import java.util.Date;
 
 public class ActivityDeligation extends AppCompatActivity {
     ConstraintLayout mainLayout;
-    Locations loc;
+    String mokyteki= null;
 
-    LocationManager locationManager;
+//    Locations loc=Locations.DEFAULT;
 
-    Thread thread=new Thread(new Runnable() {
-        @Override
-        public void run() {
-            LocationClient mLocationClient = new LocationClient(ActivityDeligation.this);
-            LocationClientOption option = new LocationClientOption();
-            option.setOpenGps(true); // 打开gps
-            option.setCoorType("bd09ll"); // 设置坐标类型
-            option.setScanSpan(1000);
-            mLocationClient.setLocOption(option);
-            mLocationClient.registerLocationListener(new BDAbstractLocationListener() {
-                @Override
-                public void onReceiveLocation(BDLocation location) {
-                    Message locationMsg = new Message();
-                    loc=DataLoader.IMWhere(location.getLongitude(),location.getLatitude());
-                    locationMsg.obj = "我的位置："+loc.name;
-                    locateHandler.sendMessage(locationMsg);
-                }
-            });
-            mLocationClient.start(); //开启地图定位图层
-        }
-    });
+//    LocationManager locationManager;
+
+//    Thread thread=new Thread(new Runnable() {
+//        @Override
+//        public void run() {
+//            LocationClient mLocationClient = new LocationClient(ActivityDeligation.this);
+//            LocationClientOption option = new LocationClientOption();
+//            option.setOpenGps(true); // 打开gps
+//            option.setCoorType("bd09ll"); // 设置坐标类型
+//            option.setScanSpan(1000);
+//            mLocationClient.setLocOption(option);
+//            mLocationClient.registerLocationListener(new BDAbstractLocationListener() {
+//                @Override
+//                public void onReceiveLocation(BDLocation location) {
+//                    Message locationMsg = new Message();
+//                    loc=DataLoader.IMWhere(location.getLongitude(),location.getLatitude());
+//                    locationMsg.obj = "我的位置："+loc.name;
+//                    locateHandler.sendMessage(locationMsg);
+//                }
+//            });
+//            mLocationClient.start(); //开启地图定位图层
+//        }
+//    });
 
     Button btnLocation;
-    Handler locateHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            btnLocation.setText((String) msg.obj);
-        }
-    };
+    Button btnDelegation;
+//    Handler locateHandler = new Handler() {
+//        @Override
+//        public void handleMessage(Message msg) {
+//            btnDelegation.setText((String) msg.obj);
+//        }
+//    };
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -82,6 +88,12 @@ public class ActivityDeligation extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+            Intent intent=getIntent();
+            mokyteki = intent.getStringExtra("mokuteki");
+//            mokyteki=savedInstanceState.
+        if(mokyteki!=null){
+            Toast.makeText(ActivityDeligation.this,mokyteki,Toast.LENGTH_SHORT).show();
+        }
         setContentView(R.layout.activity_deligation);
         mainLayout=findViewById(R.id.cl_deligation);
         Toolbar toolbar=findViewById(R.id.toolbar_deligation);
@@ -95,12 +107,12 @@ public class ActivityDeligation extends AppCompatActivity {
             }
         });
         final EditText etDelegation=findViewById(R.id.editText_deligation);
-        Button btnDelegation=findViewById(R.id.btn_send_deligation);
+        btnDelegation=findViewById(R.id.btn_send_deligation);
         btnLocation=findViewById(R.id.btn_deligation);
 
 
-        thread.start();
-        btnDelegation.setOnClickListener(new View.OnClickListener() {
+//        thread.start();
+        btnLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
@@ -109,13 +121,14 @@ public class ActivityDeligation extends AppCompatActivity {
                     public void run() {
                         SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
                         String username=sp.getString("username","unknown");
-                        DataLoader.newDelegate(username,time,loc.name,loc.name,etDelegation.getText().toString());
+                        DataLoader.newDelegate(username,time, DataLoader.locations.name,mokyteki,etDelegation.getText().toString());
                     }
                 }).start();
                 Toast.makeText(ActivityDeligation.this,"发送成功",Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
+        btnDelegation.setText("我的位置："+DataLoader.locations.name);
     }
 
     @Override

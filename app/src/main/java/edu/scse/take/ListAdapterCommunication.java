@@ -1,12 +1,13 @@
 package edu.scse.take;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.ColorDrawable;
-import android.support.design.widget.Snackbar;
-import android.view.Gravity;
+import android.graphics.drawable.BitmapDrawable;
+import android.os.Handler;
+import android.os.Message;
+import android.support.constraint.ConstraintLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +15,6 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +25,7 @@ public class ListAdapterCommunication extends BaseAdapter {
     private LayoutInflater inflater;
     private Context context;
     private boolean favored=false;
+
 
     public ListAdapterCommunication(List<ItemBeanCommunication> list, Context context) {
         this.list = list;
@@ -50,6 +51,7 @@ public class ListAdapterCommunication extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, final ViewGroup parent) {
         final ViewHolder viewHolder;
+        final ItemBeanCommunication itemBeanCommunication=list.get(position);
         if(convertView == null){
             convertView = inflater.inflate(R.layout.item_communication,parent,false);
             viewHolder = new ViewHolder();
@@ -60,12 +62,18 @@ public class ListAdapterCommunication extends BaseAdapter {
             viewHolder.intro=convertView.findViewById(R.id.textView3);
             viewHolder.title=convertView.findViewById(R.id.textView4);
             viewHolder.btnFavor=convertView.findViewById(R.id.imageButton3);
+            viewHolder.zan=convertView.findViewById(R.id.num_good);
 
             viewHolder.portrait.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     AlertDialog.Builder builder=new AlertDialog.Builder(context);
                     View view=View.inflate(context,R.layout.activity_person_info,null);
+                    ConstraintLayout cl=view.findViewById(R.id.cl_information);
+                    cl.setBackground(new BitmapDrawable(
+                            FastBlur.fastblur(BitmapFactory.decodeResource(parent.getResources(),
+                                    itemBeanCommunication.portraitRes),20)
+                    ));
                     Button btnAddFriend=view.findViewById(R.id.btn_add_friend);
                     btnAddFriend.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -76,16 +84,46 @@ public class ListAdapterCommunication extends BaseAdapter {
                     builder.setView(view).show();
                 }
             });
+            final SharedPreferences sp=context.getSharedPreferences("zan",Context.MODE_PRIVATE);
+            final String loged=context.getSharedPreferences("loginStatus",Context.MODE_PRIVATE).getString("username","");
+            final String k=loged+itemBeanCommunication.username+itemBeanCommunication.time;
+            favored=sp.getBoolean(k,false);
+            if(!favored){
+                viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_black_24dp);
+            }else{
+                viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_read_24dp);
+            }
 
             viewHolder.btnFavor.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+
                     if(!favored){
                         viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_read_24dp);
-                        favored=true;
+                        viewHolder.zan.setText(String.valueOf(Integer.parseInt(viewHolder.zan.getText().toString())+1));
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                SharedPreferences.Editor editor=sp.edit();
+                                editor.putBoolean(k,true);
+                                editor.apply();
+                                DataLoader.zanPlus(itemBeanCommunication.username,itemBeanCommunication.time);
+                                favored=true;
+                            }
+                        }).start();
                     }else{
                         viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_black_24dp);
-                        favored=false;
+                        viewHolder.zan.setText(String.valueOf(Integer.parseInt(viewHolder.zan.getText().toString())-1));
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                SharedPreferences.Editor editor=sp.edit();
+                                editor.putBoolean(k,false);
+                                editor.apply();
+                                DataLoader.zanMinus(itemBeanCommunication.username,itemBeanCommunication.time);
+                                favored=false;
+                            }
+                        }).start();
                     }
                 }
             });
@@ -100,13 +138,13 @@ public class ListAdapterCommunication extends BaseAdapter {
         }else{
             viewHolder = (ViewHolder)convertView.getTag();
         }
-        ItemBeanCommunication itemBeanCommunication=list.get(position);
         viewHolder.portrait.setImageBitmap(BitmapFactory.decodeResource(parent.getResources(), itemBeanCommunication.portraitRes));
         viewHolder.image.setImageBitmap(BitmapFactory.decodeResource(parent.getResources(), itemBeanCommunication.imageResId));
         viewHolder.time.setText(itemBeanCommunication.time);
         viewHolder.username.setText(itemBeanCommunication.username);
         viewHolder.intro.setText(itemBeanCommunication.intro);
         viewHolder.title.setText(itemBeanCommunication.title);
+        viewHolder.zan.setText(String.valueOf(itemBeanCommunication.zan));
         return convertView;
     }
 
@@ -119,6 +157,6 @@ public class ListAdapterCommunication extends BaseAdapter {
         TextView title;
         ImageButton btnFavor;
         ImageButton btnComment;
-        ImageButton btnResend;
+        TextView zan;
     }
 }
