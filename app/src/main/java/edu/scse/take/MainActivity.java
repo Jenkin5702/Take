@@ -63,6 +63,9 @@ import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.model.LatLng;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static edu.scse.take.DataLoader.locData;
 
@@ -135,24 +138,6 @@ public class MainActivity extends AppCompatActivity {
         }
     });
 
-//    public class MyLocationListener extends BDAbstractLocationListener {
-//        @Override
-//        public void onReceiveLocation(BDLocation location) {
-//            //mapView 销毁后不在处理新接收的位置
-//            if (location != null && mapView != null) {
-//                MyLocationData locData = new MyLocationData.Builder()
-//                        .accuracy(location.getRadius())
-//                        .direction(location.getDirection())
-//                        .latitude(location.getLatitude())// 此处设置开发者获取到的方向信息，顺时针0-360
-//                        .longitude(location.getLongitude())
-//                        .build();
-//                baiduMap.setMyLocationData(locData);
-//                myLocation = DataLoader.IMWhere(location.getLongitude(), location.getLatitude());
-//                DataLoader.locations=myLocation;
-//            }
-//        }
-//    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -204,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
         boolean logedin = sp.getBoolean("login", false);
         if (!logedin) {
-            startActivity(new Intent(context, ActivityLogin.class));
+            startActivityForResult(new Intent(context, ActivityLogin.class),7777);
         }
         initHeader();
     }
@@ -212,22 +197,23 @@ public class MainActivity extends AppCompatActivity {
     public Bitmap bitmap;
     public CircleImageView headerIv;
 
+
     String username;
     String intros;
-
     private void initHeader(){
         View view=navigationView.getHeaderView(navigationView.getHeaderCount()-1);
         TextView name1=view.findViewById(R.id.tv_username);
         TextView intro=view.findViewById(R.id.tv_id);
         SharedPreferences shp=getSharedPreferences("loginStatus",Context.MODE_PRIVATE);
         username=shp.getString("username","");
-        intros=shp.getString("intro","");
         name1.setText(username);
         intro.setText(intros);
         headerIv=view.findViewById(R.id.imageView);
         try {
             Bitmap headerBitmp = BitmapFactory.decodeFile("/storage/emulated/0/uclean/"+username+"headerIv.jpg");
-            headerIv.setImageBitmap(headerBitmp);
+            if(headerBitmp!=null){
+                headerIv.setImageBitmap(headerBitmp);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -238,6 +224,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_CODE);
             }
         });
+
     }
 
     @Override
@@ -263,11 +250,26 @@ public class MainActivity extends AppCompatActivity {
             bitmap=BitmapFactory.decodeFile("/storage/emulated/0/uclean/"+username+"headerIv.jpg");
             headerIv.setBackgroundColor(Color.TRANSPARENT);
             headerIv.setImageBitmap(bitmap);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    File f=new File("/storage/emulated/0/uclean/"+username+"headerIv.jpg");
+                    Map<String,File> m=new HashMap<>();
+                    m.put(username+"portrait.jpg",f);
+                    try {
+                        DataLoader.upLoadFilePost(m);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }else if(requestCode==7777){
+            initHeader();
         }
     }
 
     private void initAnimator() {
-        animatorArise = ValueAnimator.ofFloat(2000f, mapY);
+        animatorArise = ValueAnimator.ofFloat(4000f, mapY);
         animatorArise.setInterpolator(new OvershootInterpolator());
         animatorArise.setDuration(500);
         animatorArise.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -277,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        animatorDrop = ValueAnimator.ofFloat(mapY, 2000f);
+        animatorDrop = ValueAnimator.ofFloat(mapY, 4000f);
         animatorDrop.setInterpolator(new OvershootInterpolator());
         animatorDrop.setDuration(500);
         animatorDrop.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {

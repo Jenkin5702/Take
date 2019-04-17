@@ -87,15 +87,7 @@ public class ActivityTalk extends AppCompatActivity {
     }
 
     private void initMsgs() {
-        ItemBeanTalk message1 = new ItemBeanTalk("今天天气真不错!", ItemBeanTalk.TYPE_RECEIVED);
-        mMessageList.add(message1);
-        ItemBeanTalk message2 = new ItemBeanTalk("下午打篮球，有约一波的吗?", ItemBeanTalk.TYPE_SENT);
-        mMessageList.add(message2);
-        ItemBeanTalk message3 = new ItemBeanTalk("算我一个!", ItemBeanTalk.TYPE_RECEIVED);
-        mMessageList.add(message3);
-        ItemBeanTalk message4 = new ItemBeanTalk("打篮球怎么能少我呢？", ItemBeanTalk.TYPE_RECEIVED);
-        mMessageList.add(message4);
-        ItemBeanTalk message5 = new ItemBeanTalk("还要人吗？我也去！", ItemBeanTalk.TYPE_RECEIVED);
-        mMessageList.add(message5);
+        mMessageList.add(new ItemBeanTalk("Hello!", ItemBeanTalk.TYPE_RECEIVED));
+        mMessageList.add(new ItemBeanTalk("World!", ItemBeanTalk.TYPE_SENT));
     }
 }

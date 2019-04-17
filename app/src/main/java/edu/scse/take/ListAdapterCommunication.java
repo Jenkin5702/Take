@@ -3,11 +3,13 @@ package edu.scse.take;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Message;
 import android.support.constraint.ConstraintLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,8 +27,17 @@ public class ListAdapterCommunication extends BaseAdapter {
     private LayoutInflater inflater;
     private Context context;
     private boolean favored=false;
-
-
+    private Bitmap bmp;
+    private ViewHolder viewHolder;
+    private ImageLoader imageLoader;
+    Handler handler=new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            Toast.makeText(context,"---",Toast.LENGTH_SHORT).show();
+            viewHolder.image.setImageBitmap(bmp);
+        }
+    };
     public ListAdapterCommunication(List<ItemBeanCommunication> list, Context context) {
         this.list = list;
         this.context=context;
@@ -50,7 +61,6 @@ public class ListAdapterCommunication extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, final ViewGroup parent) {
-        final ViewHolder viewHolder;
         final ItemBeanCommunication itemBeanCommunication=list.get(position);
         if(convertView == null){
             convertView = inflater.inflate(R.layout.item_communication,parent,false);
@@ -97,7 +107,7 @@ public class ListAdapterCommunication extends BaseAdapter {
             viewHolder.btnFavor.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    favored=sp.getBoolean(k,false);
                     if(!favored){
                         viewHolder.btnFavor.setImageResource(R.drawable.ic_thumb_up_read_24dp);
                         viewHolder.zan.setText(String.valueOf(Integer.parseInt(viewHolder.zan.getText().toString())+1));
@@ -138,8 +148,27 @@ public class ListAdapterCommunication extends BaseAdapter {
         }else{
             viewHolder = (ViewHolder)convertView.getTag();
         }
-        viewHolder.portrait.setImageBitmap(BitmapFactory.decodeResource(parent.getResources(), itemBeanCommunication.portraitRes));
-        viewHolder.image.setImageBitmap(BitmapFactory.decodeResource(parent.getResources(), itemBeanCommunication.imageResId));
+//        viewHolder.portrait.setImageBitmap(BitmapFactory.decodeResource(parent.getResources(), itemBeanCommunication.portraitRes));
+        Log.e("123",(itemBeanCommunication.username+itemBeanCommunication.time+".jpg").replace(":","").replace(" ","_"));
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String filename=itemBeanCommunication.username+itemBeanCommunication.time+".jpg";
+                filename=filename.replace(":","");
+                filename=filename.replace(" ","_");
+                bmp = DataLoader.getURLimage(filename);
+                Message msg=new Message();
+                handler.sendMessage(msg);
+            }
+        });
+        String filename=itemBeanCommunication.username+itemBeanCommunication.time+".jpg";
+        imageLoader=new ImageLoader();
+        String imgUrl="http://192.168.43.145:8080/media/img/"+filename.replace(":","").replace(" ","_");
+        String imgUrlPortrait="http://192.168.43.145:8080/media/img/"+itemBeanCommunication.username+"portrait.jpg";
+        imageLoader.showImageByAsyncTask(viewHolder.portrait,imgUrlPortrait);
+        viewHolder.portrait.setTag(imgUrlPortrait);
+        imageLoader.showImageByAsyncTask(viewHolder.image,imgUrl);
+        viewHolder.image.setTag(imgUrl);
         viewHolder.time.setText(itemBeanCommunication.time);
         viewHolder.username.setText(itemBeanCommunication.username);
         viewHolder.intro.setText(itemBeanCommunication.intro);

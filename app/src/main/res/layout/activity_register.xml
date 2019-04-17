@@ -33,14 +33,13 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/toolbar_register"
             android:layout_marginTop="7dp"
-            android:src="@drawable/ic_launcher_foreground" />
+            android:src="@drawable/ic_person_pin_circle_black_24dp_icon" />
 
         <EditText
             android:id="@+id/realname_regi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="真实姓名"
-            android:inputType="phone" />
+            android:hint="真实姓名" />
 
         <EditText
             android:id="@+id/username_regi"

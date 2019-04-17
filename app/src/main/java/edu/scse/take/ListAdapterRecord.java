@@ -69,7 +69,11 @@ public class ListAdapterRecord extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
         ItemBeanFriend itemBeanFriend = list.get(position);
-        viewHolder.portrait.setImageBitmap(BitmapFactory.decodeResource(parent.getResources(), itemBeanFriend.portraitRes));
+//        ImageLoader imageLoader=new ImageLoader();
+//        String imgUrlPortrait="http://192.168.43.145:8080/media/img/"+itemBeanFriend.username+"portrait.jpg";
+//        imageLoader.showImageByAsyncTask(viewHolder.portrait,imgUrlPortrait);
+//        viewHolder.portrait.setTag(imgUrlPortrait);
+
         viewHolder.intro.setText(itemBeanFriend.intro);
         viewHolder.username.setText(itemBeanFriend.username);
         return convertView;

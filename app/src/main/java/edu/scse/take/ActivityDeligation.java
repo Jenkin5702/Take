@@ -110,22 +110,25 @@ public class ActivityDeligation extends AppCompatActivity {
         btnDelegation=findViewById(R.id.btn_send_deligation);
         btnLocation=findViewById(R.id.btn_deligation);
 
-
-//        thread.start();
         btnLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
-                        String username=sp.getString("username","unknown");
-                        DataLoader.newDelegate(username,time, DataLoader.locations.name,mokyteki,etDelegation.getText().toString());
-                    }
-                }).start();
-                Toast.makeText(ActivityDeligation.this,"发送成功",Toast.LENGTH_SHORT).show();
-                finish();
+                if(etDelegation.getText().toString().equals("")){
+
+                    Toast.makeText(ActivityDeligation.this,"委托消息为空哦",Toast.LENGTH_SHORT).show();
+                }else{
+                    final String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            SharedPreferences sp = getSharedPreferences("loginStatus", MODE_PRIVATE);
+                            String username=sp.getString("username","unknown");
+                            DataLoader.newDelegate(username,time, DataLoader.locations.name,mokyteki,etDelegation.getText().toString());
+                        }
+                    }).start();
+                    Toast.makeText(ActivityDeligation.this,"发送成功",Toast.LENGTH_SHORT).show();
+                    finish();
+                }
             }
         });
         btnDelegation.setText("我的位置："+DataLoader.locations.name);

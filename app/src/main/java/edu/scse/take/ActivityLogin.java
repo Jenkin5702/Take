@@ -57,15 +57,12 @@ public class ActivityLogin extends AppCompatActivity {
                             SharedPreferences.Editor editor = sp.edit();
                             editor.putBoolean("login", true);
                             editor.putString("username",etUsername.getText().toString());
-                            editor.putString("password",etPassword.getText().toString());
+//                            editor.putString("password",etPassword.getText().toString());
                             editor.apply();
-                            DataLoader.username=etUsername.getText().toString();
                             Message msg=new Message();
                             msg.arg1=2;
                             handler.sendMessage(msg);
-
                         }else{
-
                             Message msg=new Message();
                             msg.arg1=3;
                             handler.sendMessage(msg);

@@ -100,6 +100,7 @@ public class TakeService extends Service {
         if (!messageThread.isAlive()){
             messageThread.start();
         }
+        DataLoader.receiving=true;
     }
 
     @Override
@@ -107,6 +108,7 @@ public class TakeService extends Service {
         super.onDestroy();
         Toast.makeText(this, "已停止接收委托消息", Toast.LENGTH_SHORT).show();
         messageThread.interrupt();
+        DataLoader.receiving=false;
     }
 
     public class LocalBinder extends Binder {
